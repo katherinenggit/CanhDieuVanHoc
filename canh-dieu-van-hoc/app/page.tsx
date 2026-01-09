@@ -17,11 +17,8 @@ export default function HomePage() {
           <h1 className="text-4xl font-bold tracking-tight text-white sm:text-6xl">
             Cánh Diều Văn Học
           </h1>
-          <p className="mt-6 text-xl leading-8 text-purple-100">
-            Học văn qua game
-          </p>
-          <p className="mt-4 text-lg text-purple-200">
-            Ôn tập 43 tác phẩm Ngữ Văn 12 SGK Cánh Diều qua các trò chơi tương tác
+          <p className="mt-6 text-xl leading-6 text-purple-500">
+            Học nhanh - Nhớ lâu 
           </p>
           <div className="mt-10 flex items-center justify-center gap-x-6">
             <Link href="/auth/register">
@@ -35,17 +32,16 @@ export default function HomePage() {
                 variant="outline"
                 className="text-lg px-8 py-6 bg-white/10 text-white border-white/30 hover:bg-white/20"
               >
-                Xem demo
+                Giới thiệu
               </Button>
             </Link>
           </div>
 
           {/* Stats */}
-          <div className="mt-16 grid grid-cols-2 gap-8 sm:grid-cols-4">
+          <div className="mt-16 grid grid-cols-2 gap-8 sm:grid-cols-3">
             {[
-              { label: 'Tác phẩm', value: '43' },
-              { label: 'Câu hỏi', value: '1000+' },
-              { label: 'Học sinh', value: '500+' },
+              { label: 'Tác phẩm', value: '30+' },
+              { label: 'Câu hỏi', value: '300+' },
               { label: 'Trò chơi', value: '3' },
             ].map((stat) => (
               <div key={stat.label} className="flex flex-col">
@@ -62,7 +58,7 @@ export default function HomePage() {
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              Tại sao chọn Cánh Diều Văn Học?
+              Vì sao chọn Cánh Diều Văn Học?
             </h2>
             <p className="mt-4 text-lg text-gray-600">
               Phương pháp học tập hiện đại với công nghệ AI
@@ -182,15 +178,12 @@ export default function HomePage() {
       <section className="bg-gradient-to-r from-purple-600 to-blue-600 py-16">
         <div className="container mx-auto px-6 text-center">
           <h2 className="text-3xl font-bold text-white sm:text-4xl">
-            Sẵn sàng chinh phục Ngữ Văn 12?
+           Bạn đã sẵn sàng chinh phục Ngữ Văn 12?
           </h2>
-          <p className="mt-4 text-xl text-purple-100">
-            Tham gia cùng hàng trăm học sinh đang học tập hiệu quả
-          </p>
           <div className="mt-8 flex justify-center gap-4">
             <Link href="/auth/register">
               <Button size="lg" className="bg-orange-500 hover:bg-orange-600 text-lg px-8">
-                Đăng ký miễn phí
+                Đăng ký miễn phí ngay tại đây
               </Button>
             </Link>
           </div>
@@ -207,7 +200,7 @@ export default function HomePage() {
                 <span className="font-bold text-lg">Cánh Diều Văn Học</span>
               </div>
               <p className="text-sm text-gray-600">
-                Học văn qua game
+                Học nhanh - Nhớ lâu
               </p>
             </div>
             <div>
@@ -217,7 +210,7 @@ export default function HomePage() {
                   <Link href="">Giới thiệu</Link>
                 </li>
                 <li>
-                  <Link href="">Liên hệ</Link>
+                  <Link href="mailto:1203nganngthu@gmail.com">Liên hệ</Link>
                 </li>
               </ul>
             </div>
@@ -228,7 +221,7 @@ export default function HomePage() {
                   <Link href="https://chinhphu.vn/chinh-sach-bao-mat.html">Chính sách bảo mật</Link>
                 </li>
                 <li>
-                  <Link href="">Điều khoản sử dụng</Link>
+                  <Link href="https://policies.google.com/terms?hl=vi">Điều khoản sử dụng</Link>
                 </li>
               </ul>
             </div>
@@ -238,14 +231,14 @@ export default function HomePage() {
                 <a href="https://github.com/katherinenggit" className="text-gray-600 hover:text-primary">
                   Github
                 </a>
-                <a href="https://www.facebook.com/makeamericangayagain/" className="text-gray-600 hover:text-primary">
-                  Facebook
+                <a href="mailto:1203nganngthu@gmail.com" className="text-gray-600 hover:text-primary">
+                  Gmail
                 </a>
               </div>
             </div>
           </div>
           <div className="mt-8 border-t pt-8 text-center text-sm text-gray-600">
-            © 2024 Cánh Diều Văn Học. All rights reserved.
+            © 2026 Cánh Diều Văn Học. All rights reserved.
           </div>
         </div>
       </footer>
