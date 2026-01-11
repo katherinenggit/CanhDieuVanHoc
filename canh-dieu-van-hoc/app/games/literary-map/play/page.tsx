@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { toast } from 'sonner'
+import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client' 
 import { 
   fetchQuestions, 
@@ -40,7 +41,7 @@ interface Region {
   completed: boolean
 }
 
-export default function LiteraryMapPlayPage() {
+function LiteraryMapPlayContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user } = useAuth()
@@ -748,5 +749,13 @@ export default function LiteraryMapPlayPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function LiteraryMapPlayPage() {
+  return (
+    <Suspense fallback={<div>Đang tải...</div>}>
+      <LiteraryMapPlayContent />
+    </Suspense>
   )
 }

@@ -8,8 +8,9 @@ import Link from 'next/link'
 import { Mail, ArrowLeft, CheckCircle, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
+import { Suspense } from 'react'
 
-export default function VerifyEmailPage() {
+function VerifyEmaiContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const email = searchParams.get('email')
@@ -98,5 +99,13 @@ export default function VerifyEmailPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+export default function VerifyEmaiPage() {
+  return (
+    <Suspense fallback={<div>Đang tải...</div>}>
+      <VerifyEmaiContent />
+    </Suspense>
   )
 }
