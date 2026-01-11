@@ -10,21 +10,21 @@ import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import { Navbar } from '@/components/Navbar'
 import { useAuth } from '@/lib/hooks/useAuth'
-import { createClient } from '@/lib/supabase/client' // SỬA: Dùng hàm createClient mới
+import { createClient } from '@/lib/supabase/client' 
 import { Loader2, Play } from 'lucide-react'
-import { toast } from 'sonner' // SỬA: Dùng sonner thay cho use-toast
+import { toast } from 'sonner' 
 
 interface LiteraryWork {
   id: string
   title: string
   author: string
-  genre: string
+  question_count: number
 }
 
 export default function QuizRaceSetupPage() {
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
-  const supabase = createClient() // SỬA: Khởi tạo supabase client
+  const supabase = createClient() 
   
   const [works, setWorks] = useState<LiteraryWork[]>([])
   const [loading, setLoading] = useState(true)
@@ -47,22 +47,23 @@ export default function QuizRaceSetupPage() {
     }
   }, [authLoading, user, router])
 
-  const fetchWorks = async () => {
-    try {
-      const { data, error } = await createClient()
-        .from('literary_works')
-        .select('id, title, author, genre')
-        .order('title')
+ // 2. Cập nhật hàm fetchWorks để lấy thêm số lượng câu hỏi
+const fetchWorks = async () => {
+  try {
+    const { data, error } = await supabase // Sử dụng biến supabase đã tạo ở trên
+      .from('literary_works')
+      .select('id, title, author, question_count') // Lấy thêm cột này
+      .order('title')
 
-      if (error) throw error
-      setWorks(data || [])
-    } catch (error: any) {
-      console.error('Error fetching works:', error)
-      toast.error('Không thể tải danh sách tác phẩm.')
-    } finally {
-      setLoading(false)
-    }
+    if (error) throw error
+    setWorks(data || [])
+  } catch (error: any) {
+    console.error('Error fetching works:', error)
+    toast.error('Không thể tải danh sách tác phẩm.')
+  } finally {
+    setLoading(false)
   }
+}
 
   const toggleWork = (workId: string) => {
     setSelectedWorks((prev) =>
@@ -214,13 +215,14 @@ export default function QuizRaceSetupPage() {
                             }`}
                           >
                             <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <h3 className="font-semibold text-sm">{work.title}</h3>
-                                <p className="text-xs text-muted-foreground">{work.author}</p>
-                              </div>
-                              <Badge variant={isSelected ? 'default' : 'secondary'} className="text-[10px]">
-                                {work.genre}
-                              </Badge>
+                            // Tìm đoạn render danh sách tác phẩm và sửa phần hiển thị author/count
+<div className="flex-1">
+  <h3 className="font-semibold text-sm">{work.title}</h3>
+  <p className="text-xs text-muted-foreground">
+    {work.author} • <span className="font-medium text-primary">{work.question_count || 0} câu</span>
+  </p>
+</div>
+
                             </div>
                           </div>
                         )

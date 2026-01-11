@@ -1,0 +1,8 @@
+cd path_to_prj
+git init
+git add .
+git commit -m "Commit o day"
+git remote -v
+git branch
+git branch -M main
+git push origin main

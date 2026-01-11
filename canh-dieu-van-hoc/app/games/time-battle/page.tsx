@@ -179,7 +179,7 @@ export default function TimeBattleSetupPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="maxPlayers">Số người chơi tối đa</Label>
+                    <Label htmlFor="maxPlayers">Số người chơi</Label>
                     <Input
                       id="maxPlayers"
                       type="number"

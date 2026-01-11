@@ -34,20 +34,25 @@ function AnonymousLoginForm() {
     setLoading(true)
 
     try {
+      //Đăng nhập ẩn danh
       const { data, error: authError } = await supabase.auth.signInAnonymously()
-
       if (authError) throw authError
 
       if (data.user) {
+        // Lưu vào bảng profiles
         const { error: profileError } = await supabase
           .from('profiles')
-          .update({ 
+          .upsert({
+            id: data.user.id,
             display_name: displayName,
-            is_anonymous: true 
+            is_anonymous: true
           })
           .eq('id', data.user.id)
 
-        if (profileError) console.error('Profile update error:', profileError)
+          if (profileError) {
+            console.error("Lỗi lưu profile:", profileError);
+            throw new Error("Không thể tạo hồ sơ người chơi");
+          }
 
         toast.success(`Chào mừng ${displayName}!`)
 

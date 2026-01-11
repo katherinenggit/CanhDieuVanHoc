@@ -633,8 +633,8 @@ export default function LiteraryMapPlayPage() {
                         const isSelected = selectedAnswer === option
                         const isCorrect = currentQuestion.answer_data.correct === option
 
-                        let buttonClass = 'h-auto min-h-[60px] text-lg font-medium'
-
+                        let buttonClass = 'h-auto py-4 text-left justify-start px-6 whitespace-normal break-words'
+                        
                         if (isRemoved) {
                           buttonClass += ' opacity-30 cursor-not-allowed'
                         } else if (isAnswered) {

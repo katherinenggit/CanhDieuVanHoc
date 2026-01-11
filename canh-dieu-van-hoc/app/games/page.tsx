@@ -6,51 +6,110 @@ import { Button } from '@/components/ui/button'
 import { Navbar } from '@/components/Navbar'
 import { Zap, Clock, Map, Trophy, Users, Play } from 'lucide-react'
 
+// Thêm các import này vào đầu file
+import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
+import { useAuth } from '@/lib/hooks/useAuth'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
+import { Loader2, Search, LogIn } from 'lucide-react'
+import { toast } from 'sonner'
+
 const games = [
   {
     id: 'quiz-race',
     title: 'Quiz Race',
-    description: 'Trả lời câu hỏi nhanh nhất có thể',
+    description: 'Trả lời câu hỏi',
     icon: Zap,
     color: 'from-blue-500 to-cyan-500',
     features: [
       'Streak bonus: x1.5, x2 điểm',
       'Power-ups: 50/50, Time Freeze',
-      'Chế độ: Cá nhân & Thi đấu',
+      'Chế độ: Cá nhân',
     ],
     href: '/games/quiz-race',
   },
   {
     id: 'time-battle',
     title: 'Time Battle',
-    description: 'Đấu trường thời gian 2 phút',
+    description: 'Đấu trường thời gian',
     icon: Clock,
     color: 'from-red-500 to-orange-500',
     features: [
-      'Real-time multiplayer',
+    //  'Real-time multiplayer',
       'Trả lời đúng & nhanh để thắng',
-      'Live leaderboard',
+      'Bảng xếp hạng trực tiếp',
+      'Chế độ: Cá nhân & Thi đấu',
     ],
     href: '/games/time-battle',
     comingSoon: false,
   },
-  {
-    id: 'literary-map',
-    title: 'Literary Map',
-    description: 'Hành trình khám phá 15 phút',
-    icon: Map,
-    color: 'from-green-500 to-emerald-500',
-    features: [
-      'Bản đồ với nhiều địa hình',
-      'Hệ thống trái tim & năng lượng',
-      'Chìa khóa văn học & power-ups',
-    ],
-    href: '/games/literary-map',
-    comingSoon: false,
-  },
+  //{
+  //  id: 'literary-map',
+  //  title: 'Literary Map',
+   // description: 'Hành trình khám phá 15 phút',
+  //  icon: Map,
+  //  color: 'from-green-500 to-emerald-500',
+   // features: [
+    //  'Bản đồ với nhiều địa hình',
+   //   'Hệ thống trái tim & năng lượng',
+    //  'Chìa khóa văn học & power-ups',
+    //  'Chế độ: Cá nhân & Thi đấu',
+    //],
+   // href: '/games/literary-map',
+   // comingSoon: false,
+  //},
 ]
 
 export default function GamesPage() {
+  const router = useRouter()
+  const { user } = useAuth()
+  const supabase = createClient()
+
+  const [roomCodeInput, setRoomCodeInput] = useState('')
+  const [publicRooms, setPublicRooms] = useState<any[]>([])
+  const [loadingRooms, setLoadingRooms] = useState(true)
+  const [joining, setJoining] = useState(false)
+  // Logic lấy danh sách phòng từ Supabase
+  const fetchPublicRooms = useCallback(async () => {
+    setLoadingRooms(true)
+    const { data, error } = await supabase
+      .from('game_sessions')
+      .select('*, profiles:created_by(display_name)')
+      .eq('game_mode', 'competition')
+      .eq('status', 'waiting')
+      .eq('competition_type', 'direct')
+      .order('created_at', { ascending: false })
+    
+    if (!error) setPublicRooms(data || [])
+    setLoadingRooms(false)
+  }, [supabase])
+
+  useEffect(() => {
+    fetchPublicRooms()
+  }, [fetchPublicRooms])
+
+  // Logic xử lý vào phòng
+  const handleJoinRoom = async (code?: string) => {
+    const targetCode = code || roomCodeInput.trim().toUpperCase()
+    if (!targetCode) return toast.error('Vui lòng nhập mã phòng')
+    
+    setJoining(true)
+    const { data: session, error } = await supabase
+      .from('game_sessions')
+      .select('id')
+      .eq('room_code', targetCode)
+      .eq('status', 'waiting')
+      .single()
+
+    if (session) {
+      router.push(`/games/time-battle/lobby/${session?.id}`)
+    } else {
+      toast.error('Phòng không tồn tại hoặc đã bắt đầu')
+    }
+    setJoining(false)
+  }
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
@@ -60,11 +119,11 @@ export default function GamesPage() {
           <div className="mb-12 text-center">
             <h1 className="text-4xl font-bold mb-4">Chọn trò chơi</h1>
             <p className="text-lg text-muted-foreground">
-              3 chế độ chơi khác nhau để ôn tập văn học
+              2 chế độ chơi khác nhau để ôn tập văn học
             </p>
           </div>
 
-          <div className="grid gap-8 md:grid-cols-3 max-w-6xl mx-auto">
+          <div className="grid gap-8 md:grid-cols-2 max-w-6xl mx-auto">
             {games.map((game) => {
               const Icon = game.icon
               return (
@@ -114,28 +173,86 @@ export default function GamesPage() {
             })}
           </div>
 
-          {/* Public Games Section */}
-          <div className="mt-16 max-w-6xl mx-auto">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-2xl font-bold">Phòng công khai</h2>
-                <p className="text-muted-foreground">Tham gia các game do người dùng khác tạo</p>
-              </div>
-              <Button variant="outline">
-                <Users className="mr-2 h-4 w-4" />
-                Tạo phòng
-              </Button>
+          {/* Public Games Section - PHẦN ĐÃ CHỈNH SỬA */}
+          <div className="mt-16 max-w-6xl mx-auto border-t pt-10">
+            <div className="mb-8">
+              <h2 className="text-3xl font-bold">Tham gia đấu trường</h2>
+              <p className="text-muted-foreground">Vào phòng bằng mã hoặc chọn các phòng đang mở</p>
             </div>
 
-            <Card>
-              <CardContent className="py-12">
-                <div className="text-center text-muted-foreground">
-                  <Trophy className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Chưa có phòng công khai nào</p>
-                  <p className="text-sm mt-2">Tạo phòng đầu tiên để mời bạn bè thi đấu!</p>
+            <div className="grid gap-8 md:grid-cols-3">
+              {/* Cột 1: Nhập ID phòng */}
+              <Card className="border-2 border-primary/20 shadow-md h-fit">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <LogIn className="h-5 w-5 text-primary" />
+                    Vào phòng nhanh
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Input 
+                    placeholder="MÃ PHÒNG (VD: ABCD)" 
+                    className="text-center font-mono font-bold text-xl uppercase tracking-widest h-12"
+                    value={roomCodeInput}
+                    onChange={(e) => setRoomCodeInput(e.target.value)}
+                  />
+                  <Button 
+                    className="w-full h-12 text-lg font-bold" 
+                    onClick={() => handleJoinRoom()}
+                    disabled={joining}
+                  >
+                    {joining ? <Loader2 className="animate-spin mr-2" /> : 'VÀO CHƠI'}
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Cột 2 & 3: Danh sách phòng công khai */}
+              <div className="md:col-span-2 space-y-4">
+                <div className="flex items-center justify-between px-2">
+                  <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                    Phòng đang chờ ({publicRooms.length})
+                  </span>
+                  <Button variant="ghost" size="sm" onClick={fetchPublicRooms} className="h-8">
+                    <Search className="h-4 w-4 mr-2" /> Làm mới
+                  </Button>
                 </div>
-              </CardContent>
-            </Card>
+
+                <div className="grid gap-3 overflow-y-auto max-h-[400px] pr-2">
+                  {loadingRooms ? (
+                    <div className="text-center py-20 bg-white rounded-xl border border-dashed">
+                      <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary/40" />
+                    </div>
+                  ) : publicRooms.length > 0 ? (
+                    publicRooms.map((room) => (
+                      <Card key={room.id} className="hover:border-primary/50 transition-colors shadow-sm">
+                        <CardContent className="p-4 flex items-center justify-between">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-3">
+                              <span className="text-2xl font-black text-primary font-mono">{room.room_code}</span>
+                              <Badge className="bg-emerald-500 hover:bg-emerald-500">ĐANG CHỜ</Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              Chủ phòng: <span className="text-foreground font-medium">{room.profiles?.display_name || 'Học sĩ'}</span>
+                            </p>
+                          </div>
+                          <Button variant="secondary" onClick={() => handleJoinRoom(room.room_code)}>
+                            THAM GIA
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    ))
+                  ) : (
+                    <Card className="border-dashed">
+                      <CardContent className="py-16 text-center text-muted-foreground">
+                        <Users className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                        <p>Hiện không có phòng nào đang mở công khai.</p>
+                        <p className="text-sm">Hãy tự tạo phòng và chia sẻ mã cho bạn bè!</p>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </main>

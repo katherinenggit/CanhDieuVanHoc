@@ -16,6 +16,7 @@ export interface QuestionWithAnswer {
   work_id: string | null
   difficulty: 'Dễ' | 'Trung bình' | 'Khó'
   explanation: string | null
+  is_public: true | false
 }
 
 // Answer tracking

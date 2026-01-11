@@ -15,22 +15,36 @@ export async function fetchQuestions(
       .from('questions')
       .select('*')
       .eq('is_public', true)
-      .in('work_id', workIds)
+      .in('work_id', workIds); // Lưu ý: bỏ .eq('is_public') nếu DB chưa có cột này
 
-    // Filter by difficulty if not mixed
     if (difficulty !== 'Hỗn hợp') {
-      query = query.eq('difficulty', difficulty)
+      query = query.eq('difficulty', difficulty);
     }
 
-    const { data, error } = await query
+    // Lấy dư ra một chút để sau đó shuffle lấy ngẫu nhiên sẽ tốt hơn
+    const { data, error } = await query.limit(count * 2); 
 
     if (error) throw error
     if (!data || data.length === 0) {
       throw new Error('No questions found for selected criteria')
     }
 
-    // Shuffle and take requested count
-    const shuffled = shuffleArray(data)
+    // --- PHẦN THÊM MỚI: Trộn đáp án A, B, C, D bên trong mỗi câu hỏi ---
+    const questionsWithShuffledOptions = data.map(q => {
+      if (q.answer_data?.options && Array.isArray(q.answer_data.options)) {
+        return {
+          ...q,
+          answer_data: {
+            ...q.answer_data,
+            options: shuffleArray([...q.answer_data.options]) // Trộn thứ tự lựa chọn
+          }
+        }
+      }
+      return q;
+    });
+
+    // --- Logic cũ của bạn: Trộn thứ tự các câu hỏi ---
+    const shuffled = shuffleArray(questionsWithShuffledOptions)
     const selected = shuffled.slice(0, Math.min(count, shuffled.length))
 
     return selected as QuestionWithAnswer[]
@@ -170,10 +184,12 @@ export async function saveGameSession(
         game_type: gameType,
         settings,
         status: 'finished',
-        room_code: '', // Empty for personal games
+        //room_code: '', // Empty for personal games
+        room_code: gameMode === 'competition' ? settings.roomCode : `SOLO-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         started_at: new Date().toISOString(),
         finished_at: new Date().toISOString(),
       })
+
       .select()
       .single()
 

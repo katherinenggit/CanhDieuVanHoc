@@ -13,6 +13,7 @@ import { toast } from 'sonner'
 import { fetchQuestions, checkAnswer } from '@/lib/game/quiz-race-logic'
 import { QuestionWithAnswer } from '@/lib/types/game'
 import { formatTime, getDifficultyColor } from '@/lib/utils'
+import { useGameSound } from '@/lib/hooks/useGameSound'
 
 interface PlayerScore {
   player_id: string
@@ -27,20 +28,31 @@ interface PlayerScore {
 export default function TimeBattlePlayPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const { user } = useAuth()
-  const supabase = createClient() // 1. KHỞI TẠO TẠI ĐÂY
+  const supabase = createClient()
+  
+  const { 
+    playCorrect, 
+    playWrong, 
+    playClick, 
+    playVictory, 
+    playBg, 
+    stopBg, 
+    playTickTock, 
+    stopTickTock 
+  } = useGameSound()
 
   const [loading, setLoading] = useState(true)
   const [questions, setQuestions] = useState<QuestionWithAnswer[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null)
   const [hasAnswered, setHasAnswered] = useState(false)
-  const [timeRemaining, setTimeRemaining] = useState(120) 
+  const [timeRemaining, setTimeRemaining] = useState(120) // ← THỜI GIAN GAME (giây)
   const [gameFinished, setGameFinished] = useState(false)
   const [playerScores, setPlayerScores] = useState<PlayerScore[]>([])
   const [myScore, setMyScore] = useState(0)
   const [myCorrectCount, setMyCorrectCount] = useState(0)
 
-  // 2. FETCH SCORES ĐƯỢC TỐI ƯU
+  // FETCH SCORES
   const fetchScores = useCallback(async () => {
     try {
       const { data, error } = await supabase
@@ -75,7 +87,7 @@ export default function TimeBattlePlayPage({ params }: { params: { id: string } 
     }
   }, [params.id, user, supabase])
 
-  // 3. LOAD GAME
+  // LOAD GAME
   useEffect(() => {
     const loadGame = async () => {
       if (!user) return
@@ -106,7 +118,7 @@ export default function TimeBattlePlayPage({ params }: { params: { id: string } 
     loadGame()
   }, [params.id, user, router, supabase, fetchScores])
 
-  // 4. REALTIME SCORES
+  // REALTIME SCORES
   useEffect(() => {
     const channel = supabase
       .channel(`battle-${params.id}`)
@@ -123,9 +135,28 @@ export default function TimeBattlePlayPage({ params }: { params: { id: string } 
     return () => { supabase.removeChannel(channel) }
   }, [params.id, supabase, fetchScores])
 
-  // 5. TIMER
+  // ✅ SỬA LỖI: PHÁT NHẠC NỀN KHI GAME BẮT ĐẦU
+  useEffect(() => {
+    if (!loading && !gameFinished ) {
+      playBg()
+    }
+    return () => {
+      stopBg()
+      stopTickTock()
+    }
+  }, [loading, gameFinished, questions, playBg, stopBg, stopTickTock])
+
+  // ✅ SỬA LỖI: PHÁT TICK-TOCK KHI CÒN ÍT THỜI GIAN
+  useEffect(() => {
+    if (timeRemaining <= 10 && timeRemaining > 0 && !gameFinished && !hasAnswered) {
+      playTickTock()
+    }
+  }, [timeRemaining, gameFinished, hasAnswered, playTickTock])
+
+  // ✅ SỬA LỖI: TIMER COUNTDOWN (TÁCH RA useEffect RIÊNG)
   useEffect(() => {
     if (gameFinished || loading) return
+
     const timer = setInterval(() => {
       setTimeRemaining((prev) => {
         if (prev <= 1) {
@@ -135,11 +166,21 @@ export default function TimeBattlePlayPage({ params }: { params: { id: string } 
         return prev - 1
       })
     }, 1000)
+
     return () => clearInterval(timer)
-  }, [gameFinished, loading])
+  }, [gameFinished, loading]) // ← Chỉ phụ thuộc vào gameFinished và loading
+
+  // ✅ THÊM: HÀM CHỌN ĐÁP ÁN CÓ ÂM THANH
+  const handleSelectAnswer = (answer: string) => {
+    if (hasAnswered) return
+    playClick() // ← ÂM THANH CLICK
+    setSelectedAnswer(answer)
+  }
 
   const handleSubmitAnswer = async () => {
     if (!selectedAnswer || hasAnswered || !user) return
+
+    playClick() // Âm thanh submit
 
     const currentQ = questions[currentIndex]
     const isCorrect = checkAnswer(currentQ, selectedAnswer)
@@ -152,8 +193,16 @@ export default function TimeBattlePlayPage({ params }: { params: { id: string } 
 
     setHasAnswered(true)
 
+    // ✅ PHÁT ÂM THANH ĐÚNG/SAI (CHỈ 1 LẦN)
+    if (isCorrect) {
+      playCorrect()
+      toast.success(`Chính xác! +${earnedScore} điểm`)
+    } else {
+      playWrong()
+      toast.error(`Sai rồi! ${earnedScore} điểm`)
+    }
+
     try {
-      // Dùng rpc hoặc cập nhật thông thường
       const { error } = await supabase
         .from('game_participants')
         .update({
@@ -165,8 +214,7 @@ export default function TimeBattlePlayPage({ params }: { params: { id: string } 
 
       if (error) throw error
 
-      if (isCorrect) toast.success(`Chính xác! +${earnedScore} điểm`)
-      else toast.error(`Sai rồi! ${earnedScore} điểm`)
+      // ✅ XÓA: Toast trùng lặp ở đây
 
       setTimeout(() => {
         handleNextQuestion()
@@ -177,10 +225,11 @@ export default function TimeBattlePlayPage({ params }: { params: { id: string } 
   }
 
   const handleNextQuestion = () => {
-    if (currentIndex < questions.length - 1) {
+    if (timeRemaining >=1 ) {
       setCurrentIndex(prev => prev + 1)
       setSelectedAnswer(null)
       setHasAnswered(false)
+      stopTickTock() // ← Dừng tick-tock khi chuyển câu
     } else {
       finishGame()
     }
@@ -188,6 +237,10 @@ export default function TimeBattlePlayPage({ params }: { params: { id: string } 
 
   const finishGame = async () => {
     setGameFinished(true)
+    stopBg()
+    stopTickTock()
+    playVictory()
+    
     try {
       await supabase
         .from('game_sessions')
@@ -196,98 +249,116 @@ export default function TimeBattlePlayPage({ params }: { params: { id: string } 
     } catch (e) { console.error(e) }
   }
 
-  // --- RENDERING UI (Giữ nguyên cấu trúc của bạn nhưng dùng data sạch) ---
-  if (loading) return <div className="flex min-h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+  if (loading) return (
+    <div className="flex min-h-screen items-center justify-center">
+      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+    </div>
+  )
 
   if (gameFinished) {
-     const myRank = playerScores.findIndex((p) => p.player_id === user?.id) + 1
-     return (
-        <div className="min-h-screen bg-gradient-to-br from-red-600 via-orange-600 to-red-700 flex items-center justify-center p-4">
-           <Card className="w-full max-w-2xl">
-              <CardContent className="pt-10 text-center">
-                 <Trophy className="h-16 w-16 text-yellow-500 mx-auto mb-4" />
-                 <h1 className="text-3xl font-bold">Hạng #{myRank}</h1>
-                 <p className="text-muted-foreground mb-6">Trận đấu đã kết thúc!</p>
-                 <div className="space-y-2 mb-8">
-                    {playerScores.map((p, i) => (
-                       <div key={p.player_id} className={`flex justify-between p-3 rounded ${p.player_id === user?.id ? 'bg-orange-100 border border-orange-300' : 'bg-gray-50'}`}>
-                          <span>{i+1}. {p.display_name}</span>
-                          <span className="font-bold">{p.score}đ</span>
-                       </div>
-                    ))}
-                 </div>
-                 <div className="flex gap-4">
-                    <Button className="flex-1" onClick={() => router.push('/')} variant="outline"><Home className="mr-2 h-4" /> Về trang chủ</Button>
-                    <Button className="flex-1" onClick={() => router.push('/games/time-battle')}><RotateCcw className="mr-2 h-4" /> Chơi ván mới</Button>
-                 </div>
-              </CardContent>
-           </Card>
-        </div>
-     )
+    const myRank = playerScores.findIndex((p) => p.player_id === user?.id) + 1
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-600 via-orange-600 to-red-700 flex items-center justify-center p-4">
+        <Card className="w-full max-w-2xl">
+          <CardContent className="pt-10 text-center">
+            <Trophy className="h-16 w-16 text-yellow-500 mx-auto mb-4" />
+            <h1 className="text-3xl font-bold">Hạng #{myRank}</h1>
+            <p className="text-muted-foreground mb-6">Trận đấu đã kết thúc!</p>
+            <div className="space-y-2 mb-8">
+              {playerScores.map((p, i) => (
+                <div key={p.player_id} className={`flex justify-between p-3 rounded ${p.player_id === user?.id ? 'bg-orange-100 border border-orange-300' : 'bg-gray-50'}`}>
+                  <span>{i+1}. {p.display_name}</span>
+                  <span className="font-bold">{p.score}đ</span>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-4">
+              <Button className="flex-1" onClick={() => router.push('/')} variant="outline">
+                <Home className="mr-2 h-4" /> Về trang chủ
+              </Button>
+              <Button className="flex-1" onClick={() => router.push('/games/time-battle')}>
+                <RotateCcw className="mr-2 h-4" /> Chơi ván mới
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-600 via-orange-600 to-red-700 p-4">
-       {/* UI Question & Leaderboard của bạn */}
-       <div className="container mx-auto max-w-6xl py-8">
-          <div className="flex justify-between items-center text-white mb-8">
-             <div className="bg-white/20 p-4 rounded-lg flex items-center gap-3">
-                <Clock className="h-6 w-6" />
-                <span className="text-2xl font-mono font-bold">{formatTime(timeRemaining)}</span>
-             </div>
-             <div className="text-right">
-                <div className="text-3xl font-black">{myScore}</div>
-                <div className="text-xs uppercase opacity-80">Điểm của bạn</div>
-             </div>
+      <div className="container mx-auto max-w-6xl py-8">
+        <div className="flex justify-between items-center text-white mb-8">
+          <div className="bg-white/20 p-4 rounded-lg flex items-center gap-3">
+            <Clock className="h-6 w-6" />
+            <span className={`text-2xl font-mono font-bold ${timeRemaining <= 10 ? 'text-red-300 animate-pulse' : ''}`}>
+              {formatTime(timeRemaining)}
+            </span>
           </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-             <Card className="lg:col-span-2 p-6">
-                <Badge className="mb-4">{questions[currentIndex]?.difficulty}</Badge>
-                <h2 className="text-2xl font-bold text-center mb-8">{questions[currentIndex]?.content}</h2>
-                <div className="grid grid-cols-1 gap-4">
-                   {/* Thêm (questions[currentIndex]?.answer_data?.options || []) */}
-{(questions[currentIndex]?.answer_data?.options || []).map((opt, i) => (
-  <Button 
-    key={i} 
-    variant={selectedAnswer === opt ? "default" : "outline"}
-    className={`h-16 text-lg justify-start px-6 ${
-      hasAnswered && opt === questions[currentIndex]?.answer_data?.correct 
-        ? 'bg-green-500 text-white hover:bg-green-500' 
-        : ''
-    } ${
-      hasAnswered && selectedAnswer === opt && opt !== questions[currentIndex]?.answer_data?.correct 
-        ? 'bg-red-500 text-white hover:bg-red-500' 
-        : ''
-    }`}
-    onClick={() => !hasAnswered && setSelectedAnswer(opt)}
-    disabled={hasAnswered}
-  >
-    <span className="mr-3 font-bold opacity-50">{String.fromCharCode(65 + i)}.</span>
-    {opt}
-  </Button>
-))}
-                </div>
-                {!hasAnswered && (
-                   <Button className="w-full mt-8 h-12 bg-orange-600" onClick={handleSubmitAnswer} disabled={!selectedAnswer}>Gửi đáp án</Button>
-                )}
-             </Card>
-
-             <Card className="p-4">
-                <h3 className="font-bold mb-4 flex items-center gap-2"><Zap className="h-4 w-4 text-orange-500"/>BXH Trực tiếp</h3>
-                <div className="space-y-2">
-                   {playerScores.map((p, i) => (
-                      <div key={p.player_id} className={`flex items-center gap-3 p-2 rounded ${p.player_id === user?.id ? 'bg-primary/10' : ''}`}>
-                         <span className="font-bold w-4">{i+1}</span>
-                         <Avatar className="h-8 w-8"><AvatarImage src={p.avatar_url || ''} /><AvatarFallback>{p.display_name[0]}</AvatarFallback></Avatar>
-                         <span className="flex-1 truncate text-sm">{p.display_name}</span>
-                         <span className="font-bold">{p.score}</span>
-                      </div>
-                   ))}
-                </div>
-             </Card>
+          <div className="text-right">
+            <div className="text-3xl font-black">{myScore}</div>
+            <div className="text-xs uppercase opacity-80">Điểm của bạn</div>
           </div>
-       </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <Card className="lg:col-span-2 p-6">
+            <Badge className="mb-4">{questions[currentIndex]?.difficulty}</Badge>
+            <h2 className="text-2xl font-bold text-center mb-8">{questions[currentIndex]?.content}</h2>
+            <div className="grid grid-cols-1 gap-4">
+              {(questions[currentIndex]?.answer_data?.options || []).map((opt, i) => (
+                <Button 
+                  key={i} 
+                  variant={selectedAnswer === opt ? "default" : "outline"}
+                  className={`h-auto min-h-16 py-4 text-lg justify-start px-6 text-left ${
+                    hasAnswered && opt === questions[currentIndex]?.answer_data?.correct 
+                      ? 'bg-green-500 text-white hover:bg-green-500' 
+                      : ''
+                  } ${
+                    hasAnswered && selectedAnswer === opt && opt !== questions[currentIndex]?.answer_data?.correct 
+                      ? 'bg-red-500 text-white hover:bg-red-500' 
+                      : ''
+                  }`}
+                  onClick={() => handleSelectAnswer(opt)} // ← SỬA: Dùng hàm có âm thanh
+                  disabled={hasAnswered}
+                >
+                  <span className="mr-3 font-bold opacity-50">{String.fromCharCode(65 + i)}.</span>
+                  {opt}
+                </Button>
+              ))}
+            </div>
+            {!hasAnswered && (
+              <Button 
+                className="w-full mt-8 h-12 bg-orange-600 hover:bg-orange-700" 
+                onClick={handleSubmitAnswer} 
+                disabled={!selectedAnswer}
+              >
+                Gửi đáp án
+              </Button>
+            )}
+          </Card>
+
+          <Card className="p-4">
+            <h3 className="font-bold mb-4 flex items-center gap-2">
+              <Zap className="h-4 w-4 text-orange-500"/>BXH Trực tiếp
+            </h3>
+            <div className="space-y-2">
+              {playerScores.map((p, i) => (
+                <div key={p.player_id} className={`flex items-center gap-3 p-2 rounded ${p.player_id === user?.id ? 'bg-primary/10' : ''}`}>
+                  <span className="font-bold w-4">{i+1}</span>
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={p.avatar_url || ''} />
+                    <AvatarFallback>{p.display_name[0]}</AvatarFallback>
+                  </Avatar>
+                  <span className="flex-1 truncate text-sm">{p.display_name}</span>
+                  <span className="font-bold">{p.score}</span>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+      </div>
     </div>
   )
 }

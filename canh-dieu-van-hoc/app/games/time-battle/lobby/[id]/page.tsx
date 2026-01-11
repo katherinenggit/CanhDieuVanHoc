@@ -41,13 +41,19 @@ export default function TimeBattleLobbyPage({ params }: { params: { id: string }
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetchSession()
-    // Lưu ý: subscribeToParticipants trả về một hàm cleanup để remove channel
-    const unsubscribe = subscribeToParticipants()
-    return () => {
-      unsubscribe()
+    if (user) {
+      const initLobby = async () => {
+        await fetchSession()
+        await joinRoom() // Phải có dòng này thì khách mới được lưu vào DB
+      }
+      initLobby()
+  
+      const unsubscribe = subscribeToParticipants()
+      return () => {
+        unsubscribe()
+      }
     }
-  }, [params.id])
+  }, [params.id, user])
 
   const fetchSession = async () => {
     try {
@@ -94,6 +100,71 @@ export default function TimeBattleLobbyPage({ params }: { params: { id: string }
       console.error('Error fetching participants:', error)
     }
   }
+// Thêm hàm này bên dưới fetchParticipants
+const joinRoom = async () => {
+  if (!user || !params.id) return
+
+  try {
+    // Kiểm tra xem đã tham gia chưa để tránh duplicate
+    const { data: existing, error: checkError } = await supabase
+      .from('game_participants')
+      .select('id')
+      .eq('session_id', params.id)
+      .eq('player_id', user.id)
+      .maybeSingle()
+
+    if (!existing) {
+      const { error } = await supabase
+        .from('game_participants')
+        .insert({
+          session_id: params.id,
+          player_id: user.id,
+          score: 0,
+          correct_count: 0
+        })
+      
+      if (error) {
+        console.error("Lỗi join room:", error)
+        // Nếu lỗi RLS hoặc bảng thiếu cột, nó sẽ báo ở đây
+      }
+    }
+  } catch (err) {
+    console.error("Join room error:", err)
+  }
+}
+
+  const handleLeaveRoom = async () => {
+    if (!session || !user) return;
+  
+    try {
+      // Nếu là chủ phòng (host)
+      if (session.created_by === user.id) {
+        // Cập nhật status phòng thành 'finished' để đóng phòng hoàn toàn
+        const { error } = await supabase
+          .from('game_sessions')
+          .update({ status: 'finished' })
+          .eq('id', session.id);
+  
+        if (error) throw error;
+        toast.success('Bạn đã đóng phòng game.');
+      } else {
+        // Nếu là người chơi bình thường, chỉ xóa mình ra khỏi danh sách tham gia
+        await supabase
+          .from('game_participants')
+          .delete()
+          .eq('session_id', session.id)
+          .eq('player_id', user.id);
+        
+        toast.info('Bạn đã rời khỏi phòng.');
+      }
+  
+      // Sau khi xử lý xong ở DB thì chuyển hướng về trang games
+      router.push('/games/time-battle');
+    } catch (error) {
+      console.error('Lỗi khi rời phòng:', error);
+      router.push('/games/time-battle');
+    }
+  };
 
   const subscribeToParticipants = () => {
     const channel = supabase
@@ -101,13 +172,20 @@ export default function TimeBattleLobbyPage({ params }: { params: { id: string }
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'UPDATE',
           schema: 'public',
           table: 'game_participants',
           filter: `session_id=eq.${params.id}`,
         },
-        () => {
-          fetchParticipants()
+        (payload) => {
+          const updatedSession = payload.new as GameSession
+    console.log("Session vừa cập nhật:", updatedSession.status) // Thêm dòng này để debug
+ //         fetchParticipants() // Gọi lại hàm để đồng bộ danh sách
+ if (updatedSession.status === 'playing') {
+  router.push(`/games/time-battle/play/${params.id}`)
+}else {
+  toast.success('Trận đấu đã bắt đầu, bạn đang theo dõi phòng.')}
+
         }
       )
       .on(
@@ -120,9 +198,15 @@ export default function TimeBattleLobbyPage({ params }: { params: { id: string }
         },
         (payload) => {
           const updatedSession = payload.new as GameSession
+          // Nếu chủ phòng bắt đầu game
           if (updatedSession.status === 'playing') {
             router.push(`/games/time-battle/play/${params.id}`)
           }
+          // Nếu chủ phòng đóng phòng (status thành finished)
+        if (updatedSession.status === 'finished') {
+          toast.error('Chủ phòng đã đóng phòng này.');
+          router.push('/games/time-battle');
+        }
         }
       )
       .subscribe()
@@ -140,7 +224,7 @@ export default function TimeBattleLobbyPage({ params }: { params: { id: string }
   }
 
   const handleStartGame = async () => {
-    if (participants.length < 2) {
+    if (participants.length < 0) {
       toast.error('Chưa đủ người chơi: Cần ít nhất 2 người để bắt đầu.') // FIX TOAST
       return
     }
@@ -156,6 +240,7 @@ export default function TimeBattleLobbyPage({ params }: { params: { id: string }
 
       if (error) throw error
       toast.success('Đang bắt đầu trò chơi...')
+      router.push(`/games/time-battle/play/${params.id}`)
     } catch (error) {
       console.error('Error starting game:', error)
       toast.error('Lỗi: Không thể bắt đầu game.') // FIX TOAST
@@ -237,9 +322,9 @@ export default function TimeBattleLobbyPage({ params }: { params: { id: string }
         </Card>
 
         <div className="flex gap-3">
-          <Button variant="outline" className="flex-1 bg-white" onClick={() => router.push('/games/time-battle')}>
-            Rời phòng
-          </Button>
+        <Button variant="outline" className="flex-1 bg-white" onClick={handleLeaveRoom}>
+  Rời phòng
+</Button>
           {isHost ? (
             <Button className="flex-1 bg-white text-red-600 hover:bg-white/90" size="lg" onClick={handleStartGame}>
               Bắt đầu

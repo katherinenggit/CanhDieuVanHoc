@@ -32,7 +32,7 @@ export default function HomePage() {
                 variant="outline"
                 className="text-lg px-8 py-6 bg-white/10 text-white border-white/30 hover:bg-white/20"
               >
-                Giới thiệu
+                Giới thiệu  
               </Button>
             </Link>
           </div>
@@ -42,7 +42,7 @@ export default function HomePage() {
             {[
               { label: 'Tác phẩm', value: '30+' },
               { label: 'Câu hỏi', value: '300+' },
-              { label: 'Trò chơi', value: '3' },
+              { label: 'Trò chơi', value: '2' },
             ].map((stat) => (
               <div key={stat.label} className="flex flex-col">
                 <div className="text-3xl font-bold text-white">{stat.value}</div>
