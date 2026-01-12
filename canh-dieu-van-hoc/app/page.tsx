@@ -94,8 +94,7 @@ export default function HomePage() {
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base">
-                  Tự động tạo câu hỏi và phân tích điểm yếu. AI đưa ra feedback cá nhân hóa sau mỗi
-                  lượt chơi.
+                  Tự động tạo câu hỏi, mở rộng thư viện kiến thức bản thân.
                 </CardDescription>
               </CardContent>
             </Card>
