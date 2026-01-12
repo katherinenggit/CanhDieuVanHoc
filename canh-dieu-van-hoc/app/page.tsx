@@ -77,7 +77,7 @@ export default function HomePage() {
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base">
-                  3 chế độ chơi: Quiz Race, Time Battle, Literary Map. Học tập trở nên thú vị và
+                  2 chế độ chơi: Quiz Race, Time Battle. Học tập trở nên thú vị và
                   hiệu quả hơn bao giờ hết.
                 </CardDescription>
               </CardContent>
