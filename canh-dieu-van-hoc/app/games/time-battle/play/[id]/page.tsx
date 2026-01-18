@@ -1,5 +1,8 @@
 'use client'
 
+// Thêm dòng này để Vercel không báo lỗi khi build (vì có dùng params và auth)
+export const dynamic = 'force-dynamic'
+
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
@@ -8,11 +11,11 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { createClient } from '@/lib/supabase/client'
-import { Loader2, Trophy, Clock, Zap, Home, RotateCcw } from 'lucide-react'
+import { Loader2, Trophy, Clock, Zap, Home, RotateCcw, Volume2, VolumeX } from 'lucide-react'
 import { toast } from 'sonner'
 import { fetchQuestions, checkAnswer } from '@/lib/game/quiz-race-logic'
 import { QuestionWithAnswer } from '@/lib/types/game'
-import { formatTime, getDifficultyColor } from '@/lib/utils'
+import { formatTime } from '@/lib/utils'
 import { useGameSound } from '@/lib/hooks/useGameSound'
 
 interface PlayerScore {
@@ -31,28 +34,25 @@ export default function TimeBattlePlayPage({ params }: { params: { id: string } 
   const supabase = createClient()
   
   const { 
-    playCorrect, 
-    playWrong, 
-    playClick, 
-    playVictory, 
-    playBg, 
-    stopBg, 
-    playTickTock, 
-    stopTickTock 
+    playCorrect, playWrong, playClick, playVictory, 
+    playBg, stopBg, playTickTock, stopTickTock 
   } = useGameSound()
 
   const [loading, setLoading] = useState(true)
+  const [isMuted, setIsMuted] = useState(false)
   const [questions, setQuestions] = useState<QuestionWithAnswer[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null)
   const [hasAnswered, setHasAnswered] = useState(false)
-  const [timeRemaining, setTimeRemaining] = useState(120) // ← THỜI GIAN GAME (giây)
+  const [timeRemaining, setTimeRemaining] = useState(120)
   const [gameFinished, setGameFinished] = useState(false)
   const [playerScores, setPlayerScores] = useState<PlayerScore[]>([])
   const [myScore, setMyScore] = useState(0)
   const [myCorrectCount, setMyCorrectCount] = useState(0)
+  
+  // MỚI: Theo dõi trạng thái phòng
+  const [sessionStatus, setSessionStatus] = useState<'waiting' | 'playing' | 'finished'>('waiting')
 
-  // FETCH SCORES
   const fetchScores = useCallback(async () => {
     try {
       const { data, error } = await supabase
@@ -87,7 +87,7 @@ export default function TimeBattlePlayPage({ params }: { params: { id: string } 
     }
   }, [params.id, user, supabase])
 
-  // LOAD GAME
+  // LOAD GAME BAN ĐẦU
   useEffect(() => {
     const loadGame = async () => {
       if (!user) return
@@ -99,6 +99,9 @@ export default function TimeBattlePlayPage({ params }: { params: { id: string } 
           .single()
 
         if (sessionError) throw sessionError
+        
+        // Cập nhật trạng thái session ngay từ đầu
+        setSessionStatus(session.status)
 
         const fetchedQuestions = await fetchQuestions(
           session.settings.workIds,
@@ -114,14 +117,27 @@ export default function TimeBattlePlayPage({ params }: { params: { id: string } 
         setLoading(false)
       }
     }
-
     loadGame()
   }, [params.id, user, router, supabase, fetchScores])
 
-  // REALTIME SCORES
+  // REALTIME: Lắng nghe cả Session và Participants
   useEffect(() => {
     const channel = supabase
-      .channel(`battle-${params.id}`)
+      .channel(`battle-realtime-${params.id}`)
+      // 1. Nghe thay đổi trạng thái phòng (Để biết khi nào chủ phòng bấm Bắt đầu)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'game_sessions',
+        filter: `id=eq.${params.id}`,
+      }, (payload: any) => { // Fix lỗi đỏ bằng : any
+        const newStatus = payload.new.status
+        setSessionStatus(newStatus)
+        if (newStatus === 'playing') {
+          toast.success("Trận đấu bắt đầu!")
+        }
+      })
+      // 2. Nghe thay đổi điểm số của mọi người
       .on('postgres_changes', {
         event: 'UPDATE',
         schema: 'public',
@@ -135,27 +151,9 @@ export default function TimeBattlePlayPage({ params }: { params: { id: string } 
     return () => { supabase.removeChannel(channel) }
   }, [params.id, supabase, fetchScores])
 
-  // ✅ SỬA LỖI: PHÁT NHẠC NỀN KHI GAME BẮT ĐẦU
+  // TIMER LOGIC: Chỉ chạy khi status là 'playing'
   useEffect(() => {
-    if (!loading && !gameFinished ) {
-      playBg()
-    }
-    return () => {
-      stopBg()
-      stopTickTock()
-    }
-  }, [loading, gameFinished, questions, playBg, stopBg, stopTickTock])
-
-  // ✅ SỬA LỖI: PHÁT TICK-TOCK KHI CÒN ÍT THỜI GIAN
-  useEffect(() => {
-    if (timeRemaining <= 10 && timeRemaining > 0 && !gameFinished && !hasAnswered) {
-      playTickTock()
-    }
-  }, [timeRemaining, gameFinished, hasAnswered, playTickTock])
-
-  // ✅ SỬA LỖI: TIMER COUNTDOWN (TÁCH RA useEffect RIÊNG)
-  useEffect(() => {
-    if (gameFinished || loading) return
+    if (gameFinished || loading || sessionStatus !== 'playing') return
 
     const timer = setInterval(() => {
       setTimeRemaining((prev) => {
@@ -168,78 +166,24 @@ export default function TimeBattlePlayPage({ params }: { params: { id: string } 
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [gameFinished, loading]) // ← Chỉ phụ thuộc vào gameFinished và loading
+  }, [gameFinished, loading, sessionStatus])
 
-  // ✅ THÊM: HÀM CHỌN ĐÁP ÁN CÓ ÂM THANH
-  const handleSelectAnswer = (answer: string) => {
-    if (hasAnswered) return
-    playClick() // ← ÂM THANH CLICK
-    setSelectedAnswer(answer)
-  }
-
-  const handleSubmitAnswer = async () => {
-    if (!selectedAnswer || hasAnswered || !user) return
-
-    playClick() // Âm thanh submit
-
-    const currentQ = questions[currentIndex]
-    const isCorrect = checkAnswer(currentQ, selectedAnswer)
-
-    // Tính điểm: Nhanh (+10), Chậm (+5), Sai (-3)
-    let earnedScore = isCorrect ? (playerScores.some(p => p.player_id !== user.id && p.score > 0) ? 5 : 10) : -3
-    
-    const newScore = myScore + earnedScore
-    const newCorrectCount = isCorrect ? myCorrectCount + 1 : myCorrectCount
-
-    setHasAnswered(true)
-
-    // ✅ PHÁT ÂM THANH ĐÚNG/SAI (CHỈ 1 LẦN)
-    if (isCorrect) {
-      playCorrect()
-      toast.success(`Chính xác! +${earnedScore} điểm`)
+  // ÂM THANH NỀN
+  useEffect(() => {
+    if (!loading && sessionStatus === 'playing' && !gameFinished && !isMuted) {
+      playBg()
     } else {
-      playWrong()
-      toast.error(`Sai rồi! ${earnedScore} điểm`)
+      stopBg()
     }
-
-    try {
-      const { error } = await supabase
-        .from('game_participants')
-        .update({
-          score: newScore,
-          correct_count: newCorrectCount,
-        })
-        .eq('session_id', params.id)
-        .eq('player_id', user.id)
-
-      if (error) throw error
-
-      // ✅ XÓA: Toast trùng lặp ở đây
-
-      setTimeout(() => {
-        handleNextQuestion()
-      }, 1500)
-    } catch (error) {
-      toast.error('Lỗi cập nhật điểm số.')
-    }
-  }
-
-  const handleNextQuestion = () => {
-    if (timeRemaining >=1 ) {
-      setCurrentIndex(prev => prev + 1)
-      setSelectedAnswer(null)
-      setHasAnswered(false)
-      stopTickTock() // ← Dừng tick-tock khi chuyển câu
-    } else {
-      finishGame()
-    }
-  }
+    return () => stopBg()
+  }, [loading, sessionStatus, gameFinished, isMuted, playBg, stopBg])
 
   const finishGame = async () => {
+    if (gameFinished) return
     setGameFinished(true)
     stopBg()
     stopTickTock()
-    playVictory()
+    if (!isMuted) playVictory()
     
     try {
       await supabase
@@ -249,36 +193,88 @@ export default function TimeBattlePlayPage({ params }: { params: { id: string } 
     } catch (e) { console.error(e) }
   }
 
-  if (loading) return (
-    <div className="flex min-h-screen items-center justify-center">
-      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+  // XỬ LÝ ĐÁP ÁN
+  const handleSelectAnswer = (answer: string) => {
+    if (hasAnswered) return
+    if (!isMuted) playClick()
+    setSelectedAnswer(answer)
+  }
+
+  const handleSubmitAnswer = async () => {
+    if (!selectedAnswer || hasAnswered || !user) return
+    if (!isMuted) playClick()
+
+    const currentQ = questions[currentIndex]
+    const isCorrect = checkAnswer(currentQ, selectedAnswer)
+    let earnedScore = isCorrect ? 10 : -3
+    
+    const newScore = myScore + earnedScore
+    const newCorrectCount = isCorrect ? myCorrectCount + 1 : myCorrectCount
+    setHasAnswered(true)
+
+    if (isCorrect) {
+      if (!isMuted) playCorrect()
+      toast.success(`Chính xác! +${earnedScore} điểm`)
+    } else {
+      if (!isMuted) playWrong()
+      toast.error(`Sai rồi! ${earnedScore} điểm`)
+    }
+
+    try {
+      await supabase
+        .from('game_participants')
+        .update({ score: newScore, correct_count: newCorrectCount })
+        .eq('session_id', params.id)
+        .eq('player_id', user.id)
+
+      setTimeout(() => {
+        if (currentIndex < questions.length - 1) {
+          setCurrentIndex(prev => prev + 1)
+          setSelectedAnswer(null)
+          setHasAnswered(false)
+        } else {
+          finishGame()
+        }
+      }, 1500)
+    } catch (error) {
+      toast.error('Lỗi cập nhật điểm số.')
+    }
+  }
+
+  // GIAO DIỆN CHỜ (Rất quan trọng)
+  if (loading || sessionStatus === 'waiting') return (
+    <div className="min-h-screen bg-orange-500 flex flex-col items-center justify-center text-white p-4">
+      <Loader2 className="h-12 w-12 animate-spin mb-4" />
+      <h2 className="text-2xl font-bold animate-pulse">Đang đợi chủ phòng bắt đầu...</h2>
+      <p className="mt-2 opacity-80 text-center">Tất cả người chơi sẽ cùng vào trận ngay khi chủ phòng bấm nút.</p>
     </div>
   )
 
+  // GIAO DIỆN KẾT THÚC
   if (gameFinished) {
     const myRank = playerScores.findIndex((p) => p.player_id === user?.id) + 1
     return (
       <div className="min-h-screen bg-gradient-to-br from-red-600 via-orange-600 to-red-700 flex items-center justify-center p-4">
-        <Card className="w-full max-w-2xl">
+        <Card className="w-full max-w-2xl shadow-2xl">
           <CardContent className="pt-10 text-center">
-            <Trophy className="h-16 w-16 text-yellow-500 mx-auto mb-4" />
-            <h1 className="text-3xl font-bold">Hạng #{myRank}</h1>
-            <p className="text-muted-foreground mb-6">Trận đấu đã kết thúc!</p>
-            <div className="space-y-2 mb-8">
+            <Trophy className="h-20 w-20 text-yellow-500 mx-auto mb-4" />
+            <h1 className="text-4xl font-black mb-2">Hạng #{myRank}</h1>
+            <p className="text-muted-foreground mb-8 text-lg">Trận đấu đã kết thúc!</p>
+            <div className="space-y-3 mb-8">
               {playerScores.map((p, i) => (
-                <div key={p.player_id} className={`flex justify-between p-3 rounded ${p.player_id === user?.id ? 'bg-orange-100 border border-orange-300' : 'bg-gray-50'}`}>
-                  <span>{i+1}. {p.display_name}</span>
-                  <span className="font-bold">{p.score}đ</span>
+                <div key={p.player_id} className={`flex items-center justify-between p-4 rounded-xl ${p.player_id === user?.id ? 'bg-orange-100 border-2 border-orange-400' : 'bg-gray-50'}`}>
+                  <div className="flex items-center gap-3">
+                    <span className="font-black text-gray-400">#{i+1}</span>
+                    <Avatar><AvatarImage src={p.avatar_url || ''} /><AvatarFallback>{p.display_name[0]}</AvatarFallback></Avatar>
+                    <span className="font-bold">{p.display_name}</span>
+                  </div>
+                  <span className="font-black text-orange-600 text-xl">{p.score}đ</span>
                 </div>
               ))}
             </div>
-            <div className="flex gap-4">
-              <Button className="flex-1" onClick={() => router.push('/')} variant="outline">
-                <Home className="mr-2 h-4" /> Về trang chủ
-              </Button>
-              <Button className="flex-1" onClick={() => router.push('/games/time-battle')}>
-                <RotateCcw className="mr-2 h-4" /> Chơi ván mới
-              </Button>
+            <div className="grid grid-cols-2 gap-4">
+              <Button onClick={() => router.push('/')} variant="outline" className="h-12 font-bold"><Home className="mr-2" /> Trang chủ</Button>
+              <Button onClick={() => router.push('/games/time-battle')} className="h-12 font-bold bg-orange-600 hover:bg-orange-700"><RotateCcw className="mr-2" /> Chơi lại</Button>
             </div>
           </CardContent>
         </Card>
@@ -286,73 +282,86 @@ export default function TimeBattlePlayPage({ params }: { params: { id: string } 
     )
   }
 
+  // GIAO DIỆN CHƠI GAME CHÍNH
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-600 via-orange-600 to-red-700 p-4">
+      <Button 
+        variant="ghost" 
+        size="icon" 
+        className="fixed top-4 right-4 text-white hover:bg-white/20 z-50"
+        onClick={() => setIsMuted(!isMuted)}
+      >
+        {isMuted ? <VolumeX /> : <Volume2 />}
+      </Button>
+
       <div className="container mx-auto max-w-6xl py-8">
-        <div className="flex justify-between items-center text-white mb-8">
-          <div className="bg-white/20 p-4 rounded-lg flex items-center gap-3">
-            <Clock className="h-6 w-6" />
-            <span className={`text-2xl font-mono font-bold ${timeRemaining <= 10 ? 'text-red-300 animate-pulse' : ''}`}>
-              {formatTime(timeRemaining)}
-            </span>
+        <div className="flex justify-between items-end text-white mb-8">
+          <div className="space-y-1">
+            <p className="text-xs uppercase font-bold opacity-70">Thời gian</p>
+            <div className={`flex items-center gap-3 px-4 py-2 rounded-full border-2 ${timeRemaining <= 10 ? 'bg-red-500 border-white animate-pulse' : 'bg-black/20 border-white/20'}`}>
+              <Clock className="h-5 w-5" />
+              <span className="text-2xl font-mono font-bold">{formatTime(timeRemaining)}</span>
+            </div>
           </div>
           <div className="text-right">
-            <div className="text-3xl font-black">{myScore}</div>
-            <div className="text-xs uppercase opacity-80">Điểm của bạn</div>
+            <p className="text-xs uppercase font-bold opacity-70">Điểm của bạn</p>
+            <div className="text-5xl font-black text-yellow-300 drop-shadow-md">{myScore}</div>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="lg:col-span-2 p-6">
-            <Badge className="mb-4">{questions[currentIndex]?.difficulty}</Badge>
-            <h2 className="text-2xl font-bold text-center mb-8">{questions[currentIndex]?.content}</h2>
+          <Card className="lg:col-span-2 p-8 border-none shadow-2xl rounded-3xl">
+            <Badge className="mb-4 px-4 py-1 bg-blue-100 text-blue-700 border-none">{questions[currentIndex]?.difficulty}</Badge>
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-800 leading-tight mb-10">{questions[currentIndex]?.content}</h2>
+            
             <div className="grid grid-cols-1 gap-4">
               {(questions[currentIndex]?.answer_data?.options || []).map((opt, i) => (
                 <Button 
                   key={i} 
                   variant={selectedAnswer === opt ? "default" : "outline"}
-                  className={`h-auto min-h-16 py-4 text-lg justify-start px-6 text-left ${
+                  className={`h-auto min-h-[70px] py-4 text-lg justify-start px-6 text-left border-2 transition-all ${
                     hasAnswered && opt === questions[currentIndex]?.answer_data?.correct 
-                      ? 'bg-green-500 text-white hover:bg-green-500' 
-                      : ''
-                  } ${
-                    hasAnswered && selectedAnswer === opt && opt !== questions[currentIndex]?.answer_data?.correct 
-                      ? 'bg-red-500 text-white hover:bg-red-500' 
-                      : ''
+                      ? 'bg-green-500 border-green-500 text-white hover:bg-green-500' 
+                      : hasAnswered && selectedAnswer === opt 
+                        ? 'bg-red-500 border-red-500 text-white hover:bg-red-500' 
+                        : selectedAnswer === opt ? 'border-orange-500 bg-orange-50' : 'hover:border-orange-200'
                   }`}
-                  onClick={() => handleSelectAnswer(opt)} // ← SỬA: Dùng hàm có âm thanh
+                  onClick={() => handleSelectAnswer(opt)}
                   disabled={hasAnswered}
                 >
-                  <span className="mr-3 font-bold opacity-50">{String.fromCharCode(65 + i)}.</span>
-                  {opt}
+                  <span className={`mr-4 w-8 h-8 rounded-full flex items-center justify-center font-black ${selectedAnswer === opt ? 'bg-white text-orange-600' : 'bg-gray-100 text-gray-400'}`}>
+                    {String.fromCharCode(65 + i)}
+                  </span>
+                  <span className="flex-1">{opt}</span>
                 </Button>
               ))}
             </div>
+
             {!hasAnswered && (
               <Button 
-                className="w-full mt-8 h-12 bg-orange-600 hover:bg-orange-700" 
+                className="w-full mt-10 h-14 bg-orange-600 hover:bg-orange-700 text-xl font-black rounded-2xl shadow-lg shadow-orange-200" 
                 onClick={handleSubmitAnswer} 
                 disabled={!selectedAnswer}
               >
-                Gửi đáp án
+                XÁC NHẬN ĐÁP ÁN
               </Button>
             )}
           </Card>
 
-          <Card className="p-4">
-            <h3 className="font-bold mb-4 flex items-center gap-2">
-              <Zap className="h-4 w-4 text-orange-500"/>BXH Trực tiếp
+          <Card className="p-6 border-none shadow-xl rounded-3xl h-fit">
+            <h3 className="font-black text-xl mb-6 flex items-center gap-2 text-orange-800">
+              <Zap className="h-6 w-6 text-orange-500 fill-orange-500"/> BXH TRỰC TIẾP
             </h3>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {playerScores.map((p, i) => (
-                <div key={p.player_id} className={`flex items-center gap-3 p-2 rounded ${p.player_id === user?.id ? 'bg-primary/10' : ''}`}>
-                  <span className="font-bold w-4">{i+1}</span>
-                  <Avatar className="h-8 w-8">
+                <div key={p.player_id} className={`flex items-center gap-3 p-3 rounded-2xl transition-all ${p.player_id === user?.id ? 'bg-orange-50 ring-1 ring-orange-200 shadow-sm' : ''}`}>
+                  <span className={`font-black w-6 text-center ${i === 0 ? 'text-yellow-500' : 'text-gray-400'}`}>{i+1}</span>
+                  <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
                     <AvatarImage src={p.avatar_url || ''} />
-                    <AvatarFallback>{p.display_name[0]}</AvatarFallback>
+                    <AvatarFallback className="bg-orange-200 text-orange-700">{p.display_name[0]}</AvatarFallback>
                   </Avatar>
-                  <span className="flex-1 truncate text-sm">{p.display_name}</span>
-                  <span className="font-bold">{p.score}</span>
+                  <span className={`flex-1 truncate font-bold ${p.player_id === user?.id ? 'text-orange-900' : 'text-gray-700'}`}>{p.display_name}</span>
+                  <span className="font-black text-orange-600">{p.score}đ</span>
                 </div>
               ))}
             </div>

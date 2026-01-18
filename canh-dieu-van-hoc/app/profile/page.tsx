@@ -18,8 +18,10 @@ import {
   Award,
   BookOpen,
   Loader2,
+  LogOut,
 } from 'lucide-react'
 import { calculateLevel, calculateXPForNextLevel, formatScore, getBadgeColor } from '@/lib/utils'
+import { toast } from 'sonner' // Thêm thông báo nếu có
 
 interface GameHistory {
   id: string
@@ -31,6 +33,7 @@ interface GameHistory {
 
 export default function DashboardPage() {
   const router = useRouter()
+  const supabase = createClient()
   const { user, profile, loading: authLoading } = useAuth()
   const [gameHistory, setGameHistory] = useState<GameHistory[]>([])
   const [loading, setLoading] = useState(true)
@@ -45,6 +48,21 @@ export default function DashboardPage() {
       fetchGameHistory()
     }
   }, [user, authLoading, router])
+
+  // 2. Hàm xử lý đăng xuất
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut()
+      if (error) throw error
+      
+      toast.success('Đã đăng xuất thành công')
+      router.push('/auth/login')
+      router.refresh() // Làm mới để xóa cache auth
+    } catch (error) {
+      toast.error('Lỗi khi đăng xuất')
+      console.error('Logout error:', error)
+    }
+  }
 
   const fetchGameHistory = async () => {
     try {
@@ -146,6 +164,11 @@ export default function DashboardPage() {
                   <Gamepad2 className="mr-2 h-4 w-4" />
                   Chơi ngay
                 </Button>
+                {/* 3. Nút đăng xuất mới thêm vào */}
+                <Button variant="outline" className="text-red-500 hover:text-red-600 border-red-200 hover:border-red-300" onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Đăng xuất
+                  </Button>
               </div>
             </CardHeader>
             <CardContent>

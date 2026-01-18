@@ -258,7 +258,7 @@ const joinRoom = async () => {
   if (!session) return null
 
   const isHost = session.created_by === user?.id
-  const maxPlayers = session.settings?.maxPlayers || 10
+  const maxPlayers = session.settings?.maxPlayers
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-600 via-orange-600 to-red-700 p-4">

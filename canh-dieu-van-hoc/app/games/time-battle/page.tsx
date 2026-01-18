@@ -34,7 +34,7 @@ export default function TimeBattleSetupPage() {
   const [settings, setSettings] = useState({
     questionCount: 15,
     difficulty: 'Hỗn hợp' as 'Dễ' | 'Trung bình' | 'Khó' | 'Hỗn hợp',
-    maxPlayers: 10,
+    maxPlayers: 100,
     isPublic: true,
   })
 
@@ -148,15 +148,15 @@ export default function TimeBattleSetupPage() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="space-y-2">
-                    <Label htmlFor="questionCount">Số câu hỏi (10-30)</Label>
+                    <Label htmlFor="questionCount">Số câu hỏi (1-100)</Label>
                     <Input
                       id="questionCount"
                       type="number"
-                      min={10}
-                      max={30}
+                      min={1}
+                      max={100}
                       value={settings.questionCount}
                       onChange={(e) =>
-                        setSettings({ ...settings, questionCount: Math.min(30, Math.max(10, parseInt(e.target.value) || 10)) })
+                        setSettings({ ...settings, questionCount: Math.min(100, Math.max(1, parseInt(e.target.value) )) || 20 })
                       }
                     />
                   </div>
@@ -179,15 +179,15 @@ export default function TimeBattleSetupPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="maxPlayers">Số người chơi</Label>
+                    <Label htmlFor="maxPlayers">Số người chơi (1-100)</Label>
                     <Input
                       id="maxPlayers"
                       type="number"
-                      min={2}
-                      max={20}
+                      min={1}
+                      max={100}
                       value={settings.maxPlayers}
                       onChange={(e) =>
-                        setSettings({ ...settings, maxPlayers: parseInt(e.target.value) || 10 })
+                        setSettings({ ...settings, maxPlayers: parseInt(e.target.value) || 50})
                       }
                     />
                   </div>
