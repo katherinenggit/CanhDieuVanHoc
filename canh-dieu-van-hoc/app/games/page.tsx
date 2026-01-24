@@ -13,7 +13,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, Search, LogIn } from 'lucide-react'
+import { Loader2, Search, LogIn, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 
 const games = [
@@ -22,7 +22,8 @@ const games = [
     title: 'Quiz Race',
     description: 'Trả lời câu hỏi',
     icon: Zap,
-    color: 'from-blue-500 to-cyan-500',
+    //r-t-[#C2A68C]
+    color: 'from-[#7AA874] to-[#7AA874]',
     features: [
       'Streak bonus: x1.5, x2 điểm',
       'Power-ups: 50/50, Time Freeze',
@@ -35,7 +36,7 @@ const games = [
     title: 'Time Battle',
     description: 'Đấu trường thời gian',
     icon: Clock,
-    color: 'from-red-500 to-orange-500',
+    color: 'from-[#7AA874] to-[#7AA874]',
     features: [
     //  'Real-time multiplayer',
       'Trả lời đúng & nhanh để thắng',
@@ -114,7 +115,7 @@ export default function GamesPage() {
     <div className="flex min-h-screen flex-col">
       <Navbar />
 
-      <main className="flex-1 bg-gray-50 py-12">
+      <main className="flex-1 bg-[#FDF2F4] py-12">
         <div className="container mx-auto px-4">
           <div className="mb-12 text-center">
             <h1 className="text-4xl font-bold mb-4">Chọn trò chơi</h1>
@@ -142,7 +143,7 @@ export default function GamesPage() {
                     <ul className="space-y-2">
                       {game.features.map((feature, index) => (
                         <li key={index} className="flex items-center text-sm">
-                          <div className="w-1.5 h-1.5 rounded-full bg-primary mr-2" />
+                          <div className="w-1.5 h-1.5 rounded-full bg-secondary mr-2" />
                           {feature}
                         </li>
                       ))}
@@ -157,12 +158,12 @@ export default function GamesPage() {
     <Button 
       size="lg"
       className={`w-full font-bold transition-all hover:scale-[1.02] active:scale-95 ${
-        game.id === 'quiz-race' ? 'bg-orange-600 hover:bg-orange-700' :
-        game.id === 'time-battle' ? 'bg-red-600 hover:bg-red-700' :
+        game.id === 'quiz-race' ? 'bg-[#7AA874] hover:[#835151]' :
+        game.id === 'time-battle' ? 'bg-[#7AA874] hover:[#835151]' :
         'bg-emerald-600 hover:bg-emerald-700'
       }`}
     >
-      <Play className="mr-2 h-5 w-5" />
+      <Play className="mr-2 h-5 w-5 " />
       Chơi ngay
     </Button>
   </Link>
@@ -213,7 +214,7 @@ export default function GamesPage() {
                     Phòng đang chờ ({publicRooms.length})
                   </span>
                   <Button variant="ghost" size="sm" onClick={fetchPublicRooms} className="h-8">
-                    <Search className="h-4 w-4 mr-2" /> Làm mới
+                    <RefreshCw className="h-4 w-4 mr-2" /> Làm mới
                   </Button>
                 </div>
 
@@ -229,7 +230,7 @@ export default function GamesPage() {
                           <div className="space-y-1">
                             <div className="flex items-center gap-3">
                               <span className="text-2xl font-black text-primary font-mono">{room.room_code}</span>
-                              <Badge className="bg-emerald-500 hover:bg-emerald-500">ĐANG CHỜ</Badge>
+                              <Badge className="bg-secondary/80 hover:bg-secondary">ĐANG CHỜ</Badge>
                             </div>
                             <p className="text-xs text-muted-foreground">
                               Chủ phòng: <span className="text-foreground font-medium">{room.profiles?.display_name || 'Học sĩ'}</span>

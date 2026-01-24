@@ -139,7 +139,7 @@ export default function DashboardPage() {
     <div className="flex min-h-screen flex-col">
       <Navbar />
 
-      <main className="flex-1 bg-gray-50 py-8">
+      <main className="flex-1 bg-[#FDF2F4] py-8">
         <div className="container mx-auto px-4">
           {/* Profile Header */}
           <Card className="mb-8">

@@ -20,6 +20,7 @@ interface LiteraryWork {
   title: string
   author: string
   genre: string
+  question_count: number
 }
 
 export default function TimeBattleSetupPage() {
@@ -43,7 +44,7 @@ export default function TimeBattleSetupPage() {
     try {
       const { data, error } = await supabase
         .from('literary_works')
-        .select('id, title, author, genre')
+        .select('id, title, author, genre, question_count')
         .order('title')
 
       if (error) throw error
@@ -128,10 +129,10 @@ export default function TimeBattleSetupPage() {
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
-      <main className="flex-1 bg-gray-50 py-8">
+      <main className="flex-1 bg-[#FDF2F4] py-8">
         <div className="container mx-auto max-w-4xl px-4">
           <div className="mb-8 text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-red-500 to-orange-500 mb-4">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-[#C5E1A5] to-[#C5E1A5] mb-4">
               <Clock className="h-8 w-8 text-white" />
             </div>
             <h1 className="text-4xl font-bold mb-2">Time Battle</h1>
@@ -239,7 +240,7 @@ export default function TimeBattleSetupPage() {
                             onClick={() => toggleWork(work.id)}
                             className={`cursor-pointer rounded-lg border-2 p-4 transition-all hover:shadow-md ${
                               isSelected
-                                ? 'border-red-500 bg-red-50'
+                                ? 'border-[#A6CF98] bg-[#A6CF98]/10'
                                 : 'border-gray-200 hover:border-gray-300'
                             }`}
                           >
@@ -249,7 +250,7 @@ export default function TimeBattleSetupPage() {
                                 <p className="text-sm text-muted-foreground">{work.author}</p>
                               </div>
                               <Badge variant={isSelected ? 'default' : 'secondary'}>
-                                {work.genre}
+                                {work.question_count}
                               </Badge>
                             </div>
                           </div>

@@ -30,12 +30,12 @@ export function Navbar() {
   ]
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <nav className="sticky top-0 z-50 w-full border-b border-[#C5E1A5] bg-[#945034]/95 backdrop-blur supports-[backdrop-filter]:bg-[#FFD8DF]/60">
       <div className="container flex h-16 items-center justify-between px-4">
         {/* Logo */}
         <Link href="/" className="flex items-center space-x-2 shrink-0">
           <BookOpen className="h-6 w-6 text-primary" />
-          <span className="font-bold text-xl hidden sm:inline-block">
+          <span className="font-bold text-xl hidden sm:inline-block text-[#5F8B4C]">
             Cánh Diều Văn Học
           </span>
         </Link>
@@ -51,7 +51,7 @@ export function Navbar() {
                   variant={isActive ? 'secondary' : 'ghost'}
                   className={cn(
                     'flex items-center space-x-2 px-3',
-                    isActive && 'bg-secondary font-semibold text-primary'
+                    isActive && 'bg-[#5F8B4C] font-semibold text-white'
                   )}
                 >
                   <Icon className="h-4 w-4" />
@@ -70,7 +70,7 @@ export function Navbar() {
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
                   <Avatar>
                     <AvatarImage src={profile.avatar_url || undefined} alt={profile.display_name} />
-                    <AvatarFallback className="bg-primary text-primary-foreground">
+                    <AvatarFallback className="bg-[#FFB7C5] text-primary-foreground">
                       {profile.display_name ? profile.display_name[0].toUpperCase() : 'U'}
                     </AvatarFallback>
                   </Avatar>
@@ -89,7 +89,7 @@ export function Navbar() {
                         </p>
                       </div>
                       <div className="flex items-center pt-1 border-t border-border/50">
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-primary/10 text-primary uppercase">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#C5E1A5] text-[#4A5D23] uppercase">
                           Lv {profile.level || 1}
                         </span>
                         <span className="mx-2 text-muted-foreground opacity-30">|</span>
@@ -136,7 +136,7 @@ export function Navbar() {
                 <Button variant="ghost" size="sm">Đăng nhập</Button>
               </Link>
               <Link href="/auth/register">
-                <Button size="sm">Đăng ký</Button>
+              <Button size="sm" className="bg-[#FF8E9E] hover:bg-[#FF7488] text-white">Đăng ký</Button>
               </Link>
             </div>
           )}

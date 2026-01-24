@@ -11,18 +11,18 @@ export default function HomePage() {
       <Navbar />
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-purple-600 via-blue-600 to-purple-700 px-6 py-24 sm:py-32 lg:px-8">
+      <section className="relative overflow-hidden bg-gradient-to-br from-[#FFB7C5] via-[#FFD1DC] to-[#C5E1A5] px-6 py-24 sm:py-32 lg:px-8">
         <div className="absolute inset-0 bg-grid-white/10 [mask-image:radial-gradient(white,transparent_70%)]" />
         <div className="relative mx-auto max-w-5xl text-center">
           <h1 className="text-4xl font-bold tracking-tight text-white sm:text-6xl">
             Cánh Diều Văn Học
           </h1>
-          <p className="mt-6 text-xl leading-6 text-purple-500">
+          <p className="mt-6 text-xl leading-6 text-[#5D7A32] font-medium">
             Học nhanh - Nhớ lâu 
           </p>
           <div className="mt-10 flex items-center justify-center gap-x-6">
             <Link href="/auth/register">
-              <Button size="lg" className="bg-orange-500 hover:bg-orange-600 text-lg px-8 py-6">
+              <Button size="lg" className="bg-[#85A947] hover:bg-[#6A8839] text-lg px-8 py-6">
                 Bắt đầu ngay
               </Button>
             </Link>
@@ -30,7 +30,7 @@ export default function HomePage() {
               <Button
                 size="lg"
                 variant="outline"
-                className="text-lg px-8 py-6 bg-white/10 text-white border-white/30 hover:bg-white/20"
+                className="text-lg px-8 py-6 bg-white/40 text-[#5D7A32] border-[#C5E1A5] hover:bg-white/60 hover:bg-white/20"
               >
                 Giới thiệu  
               </Button>
@@ -46,7 +46,7 @@ export default function HomePage() {
             ].map((stat) => (
               <div key={stat.label} className="flex flex-col">
                 <div className="text-3xl font-bold text-white">{stat.value}</div>
-                <div className="text-sm text-purple-200">{stat.label}</div>
+                <div className="text-sm text-brown-200">{stat.label}</div>
               </div>
             ))}
           </div>
@@ -54,7 +54,7 @@ export default function HomePage() {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-24 bg-gray-50">
+      <section id="features" className="py-24 bg-[#FDF2F4]">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
@@ -66,11 +66,11 @@ export default function HomePage() {
           </div>
 
           <div className="grid gap-8 md:grid-cols-3">
-            <Card className="border-t-4 border-t-blue-500">
+            <Card className="border-t-4 border-t-[#A8DF8E]">
               <CardHeader>
                 <div className="flex items-center space-x-3">
-                  <div className="rounded-lg bg-blue-100 p-3">
-                    <Gamepad2 className="h-6 w-6 text-blue-600" />
+                  <div className="rounded-lg bg-[#DCEDC8] p-3">
+                    <Gamepad2 className="h-6 w-6 text-[#5D7A32]" />
                   </div>
                   <CardTitle>Học qua Game</CardTitle>
                 </div>
@@ -83,11 +83,11 @@ export default function HomePage() {
               </CardContent>
             </Card>
 
-            <Card className="border-t-4 border-t-purple-500">
+            <Card className="border-t-4 border-t-[#C2A68C]">
               <CardHeader>
                 <div className="flex items-center space-x-3">
                   <div className="rounded-lg bg-purple-100 p-3">
-                    <Brain className="h-6 w-6 text-purple-600" />
+                    <Brain className="h-6 w-6 text-[#896C6C]" />
                   </div>
                   <CardTitle>AI Hỗ trợ</CardTitle>
                 </div>
@@ -99,11 +99,11 @@ export default function HomePage() {
               </CardContent>
             </Card>
 
-            <Card className="border-t-4 border-t-orange-500">
+            <Card className="border-t-4 border-t-[#FFB7C5]">
               <CardHeader>
                 <div className="flex items-center space-x-3">
-                  <div className="rounded-lg bg-orange-100 p-3">
-                    <Trophy className="h-6 w-6 text-orange-600" />
+                  <div className="rounded-lg bg-[#FCE4E8] p-3">
+                    <Trophy className="h-6 w-6 text-[#FF8E9E]" />
                   </div>
                   <CardTitle>Thi đấu Realtime</CardTitle>
                 </div>
@@ -157,10 +157,10 @@ export default function HomePage() {
               return (
                 <div key={item.step} className="flex flex-col items-center text-center">
                   <div className="relative mb-6">
-                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-purple-600 to-blue-600 text-2xl font-bold text-white">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-[#85A947] to-[#C5E1A5] text-2xl font-bold text-white">
                       {item.step}
                     </div>
-                    <div className="absolute -right-2 -top-2 flex h-8 w-8 items-center justify-center rounded-full bg-orange-500">
+                    <div className="absolute -right-2 -top-2 flex h-8 w-8 items-center justify-center rounded-full bg-[#FF8E9E]">
                       <Icon className="h-4 w-4 text-white" />
                     </div>
                   </div>
@@ -174,14 +174,14 @@ export default function HomePage() {
       </section>
 
       {/* CTA Section */}
-      <section className="bg-gradient-to-r from-purple-600 to-blue-600 py-16">
+      <section className="bg-gradient-to-r from-[#FFE4EF] to-[#F39EB6] py-16">
         <div className="container mx-auto px-6 text-center">
-          <h2 className="text-3xl font-bold text-white sm:text-4xl">
+          <h2 className="text-3xl font-bold  sm:text-4xl">
            Bạn đã sẵn sàng chinh phục Ngữ Văn 12?
           </h2>
           <div className="mt-8 flex justify-center gap-4">
             <Link href="/auth/register">
-              <Button size="lg" className="bg-orange-500 hover:bg-orange-600 text-lg px-8">
+              <Button size="lg" className="bg-[#85A947] hover:bg-[#6A8839] text-lg px-8">
                 Đăng ký miễn phí ngay tại đây
               </Button>
             </Link>
@@ -190,7 +190,7 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t bg-gray-50 py-12">
+      <footer className="border-t bg-[#FDF2F4] py-12">
         <div className="container mx-auto px-6">
           <div className="grid gap-8 md:grid-cols-4">
             <div>

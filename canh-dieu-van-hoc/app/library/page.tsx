@@ -364,7 +364,7 @@ const handleSaveAllAiQuestions = async () => {
     <div className="flex min-h-screen flex-col">
       <Navbar />
 
-      <main className="flex-1 bg-gray-50 py-12">
+      <main className="flex-1 bg-[#FDF2F4] py-12">
         <div className="container mx-auto px-4 max-w-6xl">
           {/* Header */}
           <div className="mb-8">

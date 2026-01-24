@@ -261,7 +261,7 @@ const joinRoom = async () => {
   const maxPlayers = session.settings?.maxPlayers
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-600 via-orange-600 to-red-700 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-[#C5E1A5] to-[#FFB7C5] p-4">
       {/* Giữ nguyên phần Return UI của bạn vì nó đã khá đẹp rồi */}
       <div className="container mx-auto max-w-4xl py-8">
          {/* ... (Các nội dung UI của bạn) ... */}
@@ -270,8 +270,8 @@ const joinRoom = async () => {
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white/20 mb-4">
             <Clock className="h-10 w-10 text-white" />
           </div>
-          <h1 className="text-4xl font-bold text-white mb-2">Phòng chờ</h1>
-          <p className="text-white/80">Đang chờ người chơi tham gia...</p>
+          <h1 className="text-4xl font-bold mb-2">Phòng chờ</h1>
+          <p>Đang chờ người chơi tham gia...</p>
         </div>
 
         <Card className="mb-6">
@@ -330,7 +330,7 @@ const joinRoom = async () => {
               Bắt đầu
             </Button>
           ) : (
-            <div className="flex-1 flex items-center justify-center text-white italic">
+            <div className="flex-1 flex items-center justify-center italic">
               Đợi chủ phòng bắt đầu...
             </div>
           )}

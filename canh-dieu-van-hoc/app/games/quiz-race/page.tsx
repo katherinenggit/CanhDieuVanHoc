@@ -88,7 +88,7 @@ export default function QuizRaceSetupPage() {
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
-      <main className="flex-1 bg-gray-50 py-8">
+      <main className="flex-1 bg-[#FDF2F4] py-8">
         <div className="container mx-auto max-w-5xl px-4">
           <div className="mb-8 text-center">
             <h1 className="text-4xl font-bold mb-2 flex items-center justify-center gap-3">
@@ -129,7 +129,8 @@ export default function QuizRaceSetupPage() {
                 </CardContent>
               </Card>
 
-              <Button onClick={handleStartGame} className="w-full py-6 text-lg font-bold shadow-lg bg-blue-600 hover:bg-blue-700">
+              <Button onClick={handleStartGame} className="w-full py-6 text-lg font-bold shadow-lg bg-[#7AA874] hover:[#835151]
+">
                 <Play className="mr-2 fill-current" /> BẮT ĐẦU ĐUA
               </Button>
             </div>
@@ -150,13 +151,13 @@ export default function QuizRaceSetupPage() {
                         key={work.id}
                         onClick={() => toggleSelection(work.id, 'work')}
                         className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                          selectedWorks.includes(work.id) ? 'border-blue-500 bg-blue-50' : 'border-gray-100 hover:border-gray-200'
+                          selectedWorks.includes(work.id) ? 'border-[#A6CF98] bg-[#A6CF98]/10' : 'border-gray-200 hover:border-gray-300'
                         }`}
                       >
                         <p className="font-semibold text-sm line-clamp-1">{work.title}</p>
                         <p className="text-[10px] text-muted-foreground uppercase">{work.author}</p>
                         <div className="flex justify-between items-center mt-2">
-                          <span className="text-[10px] font-medium text-blue-600">{work.question_count} câu</span>
+                          <span className="text-[10px] font-medium text-grey-600">{work.question_count} câu</span>
                         </div>
                       </div>
                     ))}

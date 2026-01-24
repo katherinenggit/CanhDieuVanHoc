@@ -300,7 +300,7 @@ function QuizRaceGame() {
 
   if (gameFinished && gameResult) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-600 via-blue-600 to-purple-700 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-[#FFB7C5] to-[#C5E1A5] flex items-center justify-center p-4">
         <Card className="w-full max-w-2xl shadow-2xl">
           <CardContent className="pt-8">
              {/* Nội dung kết quả giữ nguyên như code của bạn nhưng bọc trong UI sạch hơn */}
@@ -315,7 +315,7 @@ function QuizRaceGame() {
                     <p className="text-xs text-muted-foreground uppercase">Điểm số</p>
                 </div>
                 <div className="bg-secondary/50 p-4 rounded-xl text-center">
-                    <p className="text-2xl font-bold text-green-500">{gameResult.correctAnswers}</p>
+                    <p className="text-2xl font-bold text-[#58E481]">{gameResult.correctAnswers}</p>
                     <p className="text-xs text-muted-foreground uppercase">Đúng</p>
                 </div>
                 <div className="bg-secondary/50 p-4 rounded-xl text-center">
@@ -348,7 +348,7 @@ function QuizRaceGame() {
   const progress = ((currentIndex + 1) / questions.length) * 100
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-600 via-blue-600 to-purple-700 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-[#C5E1A5] to-[#FFB7C5] p-4">
       <div className="container mx-auto max-w-4xl">
         <div className="mb-6 flex items-center justify-between text-white">
           <div className="flex-1 max-w-[200px]">
@@ -442,7 +442,7 @@ function QuizRaceGame() {
             </div>
 
             {!isAnswered && (
-                <Button size="lg" className="px-10 bg-orange-500 hover:bg-orange-600 text-white font-bold shadow-lg" onClick={() => handleSubmitAnswer()} disabled={!selectedAnswer}>
+                <Button size="lg" className="px-10 bg-[#85A947] hover:bg-[#6A8839] text-white font-bold shadow-lg" onClick={() => handleSubmitAnswer()} disabled={!selectedAnswer}>
                     XÁC NHẬN <ChevronRight className="ml-2" />
                 </Button>
             )}
